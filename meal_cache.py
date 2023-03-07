@@ -46,10 +46,13 @@ for meal in meals:
         m = re.search(allergy_regex, menu_string)
         if m:
             menu_list.append(
-                [menu_string[: m.start()].strip(), list(map(int, m.group()[1:-1].split(".")[:-1]))]
+                {
+                    "name": menu_string[: m.start()].strip(),
+                    "allergy": list(map(int, m.group()[1:-1].split(".")[:-1])),
+                }
             )
         else:
-            menu_list.append([menu_string, []])
+            menu_list.append({"name": menu_string, "allergy": []})
 
     calorie = float(meal["CAL_INFO"][:-5])
     meal_type = meal["MMEAL_SC_NM"]
@@ -57,7 +60,15 @@ for meal in meals:
 
     set = {"type": meal_type, "menu": menu_list, "calorie": calorie}
 
-    if id in data:
+    if id in data.keys():
         data[id][meal_no] = set
     else:
         data[id] = {meal_no: set}
+
+batch = db.batch()
+meal_ref = db.collection("meal")
+
+for id, meal_set in data.items():
+    batch.set(meal_ref.document(id), meal_set)
+
+batch.commit()
