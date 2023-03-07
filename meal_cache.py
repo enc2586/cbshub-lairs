@@ -3,6 +3,7 @@ import urllib.parse
 import os
 import re
 import datetime as dt
+from pprint import pprint
 
 import firebase_init
 
@@ -36,7 +37,19 @@ allergy_regex = r"\(\d+(\.\d+)*\.\)$"
 
 data = {}
 
+meal_variant_dict = {"조식": 0, "중식": 1, "석식": 2}
+
+count = 0
+
 for meal in meals:
+    meal_type = meal["MMEAL_SC_NM"]
+    if meal_type in ("조식", "중식", "석식"):
+        meal_no = meal_variant_dict[meal_type]
+    else:
+        continue
+
+    count += 1
+
     id = meal["MLSV_YMD"]
 
     menu_list = []
@@ -55,20 +68,25 @@ for meal in meals:
             menu_list.append({"name": menu_string, "allergy": []})
 
     calorie = float(meal["CAL_INFO"][:-5])
-    meal_type = meal["MMEAL_SC_NM"]
-    meal_no = meal["MMEAL_SC_CODE"]
 
     set = {"type": meal_type, "menu": menu_list, "calorie": calorie}
 
     if id in data.keys():
-        data[id][meal_no] = set
+        data[id]["data"][meal_no] = set
     else:
-        data[id] = {meal_no: set}
+        temp_list = [None, None, None]
+        temp_list[meal_no] = set
+        data[id] = {"data": temp_list}
 
 batch = db.batch()
 meal_ref = db.collection("meal")
 
 for id, meal_set in data.items():
+    meal_set["date"] = dt.datetime.strptime(id, "%Y%m%d")
     batch.set(meal_ref.document(id), meal_set)
 
 batch.commit()
+
+print(
+    f'Processed {count} meals between {min_date.strftime("%Y%m%d")} and {max_date.strftime("%Y%m%d")}.'
+)
