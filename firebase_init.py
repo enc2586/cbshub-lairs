@@ -10,7 +10,7 @@ load_dotenv()
 
 
 def db():
-    cred = credentials.Certificate(json.loads(os.getenv("FIREBASE_CONFIG")))
+    cred = credentials.Certificate(os.getenv("FIREBASE_CONFIG"))
 
     firebase_admin.initialize_app(cred)
     return firestore.client()
