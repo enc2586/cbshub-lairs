@@ -32,6 +32,11 @@ jobs:
       #         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
       #         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       - name: Test with pytest
+        env:
+          CBSHSELF_ID: ${{ secrets.CBSHSELF_ID }}
+          CBSHSELF_PW: ${{ secrets.CBSHSELF_PW }}
+          FIREBASE_CONFIG: ${{ secrets.FIREBASE_CONFIG }}
+          NEIS_KEY: ${{ secrets.NEIS_KEY }}
         run: |
           python3 workflow_cache.py
           python3 meal_cache.py
