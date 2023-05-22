@@ -12,8 +12,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 today = dt.datetime.today()
-max_date = today + dt.timedelta(weeks=8)
-min_date = today - dt.timedelta(weeks=8)
+max_date = today + dt.timedelta(weeks=2)
+min_date = today - dt.timedelta(weeks=2)
 
 db = firebase_init.db()
 
@@ -42,15 +42,18 @@ meal_variant_dict = {"조식": 0, "중식": 1, "석식": 2}
 count = 0
 
 for meal in meals:
+    id = meal["MLSV_YMD"]
     meal_type = meal["MMEAL_SC_NM"]
+
+    if id == "20230315":
+        pprint(meal)
+
     if meal_type in ("조식", "중식", "석식"):
         meal_no = meal_variant_dict[meal_type]
     else:
         continue
 
     count += 1
-
-    id = meal["MLSV_YMD"]
 
     menu_list = []
     menus = meal["DDISH_NM"].split("<br/>")
@@ -84,6 +87,8 @@ meal_ref = db.collection("meal")
 for id, meal_set in data.items():
     meal_set["date"] = dt.datetime.strptime(id, "%Y%m%d")
     batch.set(meal_ref.document(id), meal_set)
+    # if id == "20230315":
+    #     pprint(meal_set)
 
 batch.commit()
 
