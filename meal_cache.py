@@ -11,87 +11,86 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-today = dt.datetime.today()
-max_date = today + dt.timedelta(weeks=2)
-min_date = today - dt.timedelta(weeks=2)
+print("\nUpdating meal cache... ", end=" ")
 
 db = firebase_init.db()
+today = dt.datetime.today()
 
-BASE_URL = "https://open.neis.go.kr/hub/mealServiceDietInfo?"
-params = {
-    "KEY": os.getenv("NEIS_KEY"),
-    "Type": "json",
-    "ATPT_OFCDC_SC_CODE": "M10",
-    "SD_SCHUL_CODE": "8000075",
-    "MLSV_FROM_YMD": min_date.strftime("%Y%m%d"),
-    "MLSV_TO_YMD": max_date.strftime("%Y%m%d"),
-}
-encoded_params = urllib.parse.urlencode(params)
+for i in range(2):
+    max_date = today + dt.timedelta(weeks=4 - 4 * i)
+    min_date = today - dt.timedelta(weeks=4 * i)
 
-target = BASE_URL + encoded_params
-response = requests.get(target)
+    BASE_URL = "https://open.neis.go.kr/hub/mealServiceDietInfo?"
+    params = {
+        "KEY": os.getenv("NEIS_KEY"),
+        "Type": "json",
+        "ATPT_OFCDC_SC_CODE": "M10",
+        "SD_SCHUL_CODE": "8000075",
+        "MLSV_FROM_YMD": min_date.strftime("%Y%m%d"),
+        "MLSV_TO_YMD": max_date.strftime("%Y%m%d"),
+    }
+    encoded_params = urllib.parse.urlencode(params)
 
-meals = response.json()["mealServiceDietInfo"][1]["row"]
+    target = BASE_URL + encoded_params
+    response = requests.get(target)
 
-allergy_regex = r"\(\d+(\.\d+)*\.\)$"
+    meals = response.json()["mealServiceDietInfo"][1]["row"]
 
-data = {}
+    allergy_regex = r"\(\d+(\.\d+)*\.\)$"
 
-meal_variant_dict = {"조식": 0, "중식": 1, "석식": 2}
+    data = {}
 
-count = 0
+    meal_variant_dict = {"조식": 0, "중식": 1, "석식": 2}
 
-for meal in meals:
-    id = meal["MLSV_YMD"]
-    meal_type = meal["MMEAL_SC_NM"]
+    count = 0
 
-    if id == "20230315":
-        pprint(meal)
-
-    if meal_type in ("조식", "중식", "석식"):
-        meal_no = meal_variant_dict[meal_type]
-    else:
-        continue
-
-    count += 1
-
-    menu_list = []
-    menus = meal["DDISH_NM"].split("<br/>")
-    for menu in menus:
-        menu_string = menu.strip()
-        m = re.search(allergy_regex, menu_string)
-        if m:
-            menu_list.append(
-                {
-                    "name": menu_string[: m.start()].strip(),
-                    "allergy": list(map(int, m.group()[1:-1].split(".")[:-1])),
-                }
-            )
+    for meal in meals:
+        meal_type = meal["MMEAL_SC_NM"]
+        if meal_type in ("조식", "중식", "석식"):
+            meal_no = meal_variant_dict[meal_type]
         else:
-            menu_list.append({"name": menu_string, "allergy": []})
+            continue
 
-    calorie = float(meal["CAL_INFO"][:-5])
+        count += 1
 
-    set = {"type": meal_type, "menu": menu_list, "calorie": calorie}
+        id = meal["MLSV_YMD"]
 
-    if id in data.keys():
-        data[id]["data"][meal_no] = set
-    else:
-        temp_list = [None, None, None]
-        temp_list[meal_no] = set
-        data[id] = {"data": temp_list}
+        menu_list = []
+        menus = meal["DDISH_NM"].split("<br/>")
+        for menu in menus:
+            menu_string = menu.strip()
+            m = re.search(allergy_regex, menu_string)
+            if m:
+                menu_list.append(
+                    {
+                        "name": menu_string[: m.start()].strip(),
+                        "allergy": list(map(int, m.group()[1:-1].split(".")[:-1])),
+                    }
+                )
+            else:
+                menu_list.append({"name": menu_string, "allergy": []})
 
-batch = db.batch()
-meal_ref = db.collection("meal")
+        calorie = float(meal["CAL_INFO"][:-5])
 
-for id, meal_set in data.items():
-    meal_set["date"] = dt.datetime.strptime(id, "%Y%m%d")
-    batch.set(meal_ref.document(id), meal_set)
-    # if id == "20230315":
-    #     pprint(meal_set)
+        set = {"type": meal_type, "menu": menu_list, "calorie": calorie}
 
-batch.commit()
+        if id in data.keys():
+            data[id]["data"][meal_no] = set
+        else:
+            temp_list = [None, None, None]
+            temp_list[meal_no] = set
+            data[id] = {"data": temp_list}
 
-print(
-    f'Processed {count} meals between {min_date.strftime("%Y%m%d")} and {max_date.strftime("%Y%m%d")}.'
-)
+    batch = db.batch()
+    meal_ref = db.collection("meal")
+
+    for id, meal_set in data.items():
+        meal_set["date"] = dt.datetime.strptime(id, "%Y%m%d")
+        batch.set(meal_ref.document(id), meal_set)
+
+    batch.commit()
+
+    print(f"SUCCESS:{i+1}/2")
+    print(
+        f'Processed {count} meals between {min_date.strftime("%Y%m%d")} and {max_date.strftime("%Y%m%d")}.'
+    )
