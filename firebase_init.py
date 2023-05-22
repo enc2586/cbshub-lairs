@@ -4,13 +4,12 @@ from firebase_admin import firestore
 
 import json
 import os
-from dotenv import load_dotenv
 
-load_dotenv()
+FIREBASE_CONFIG = os.environ["FIREBASE_CONFIG"]
 
 
 def db():
-    cred = credentials.Certificate(os.getenv("FIREBASE_CONFIG"))
+    cred = credentials.Certificate(json.loads(FIREBASE_CONFIG))
 
     firebase_admin.initialize_app(cred)
     return firestore.client()

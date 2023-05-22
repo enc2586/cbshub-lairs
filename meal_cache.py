@@ -7,9 +7,7 @@ from pprint import pprint
 
 import firebase_init
 
-from dotenv import load_dotenv
-
-load_dotenv()
+NEIS_KEY = os.environ["NEIS_KEY"]
 
 print("\nUpdating meal cache... ", end=" ")
 
@@ -22,7 +20,7 @@ for i in range(2):
 
     BASE_URL = "https://open.neis.go.kr/hub/mealServiceDietInfo?"
     params = {
-        "KEY": os.getenv("NEIS_KEY"),
+        "KEY": NEIS_KEY,
         "Type": "json",
         "ATPT_OFCDC_SC_CODE": "M10",
         "SD_SCHUL_CODE": "8000075",

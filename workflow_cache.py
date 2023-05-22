@@ -4,10 +4,16 @@ from firebase_admin import firestore
 import requests as req
 from bs4 import BeautifulSoup
 
+import os
+
 SIGNIN_URL = "http://www.cbshself.kr/sign/actionLogin.do"
 TCRINFO_URL = "http://www.cbshself.kr/self/writeSelfLrnReqst.do"
 ROOMINFO_URL = "http://www.cbshself.kr/clssrm/buldDrw.do"
 
+print("\nUpdating workflow cache... ", end=" ")
+
+CBSHSELF_ID = os.environ["CBSHSELF_ID"]
+CBSHSELF_PW = os.environ["CBSHSELF_PW"]
 
 db = firebase_init.db()
 
@@ -18,7 +24,7 @@ def cleanUp(str):
     return result
 
 
-cred = {"id": "enc2586", "password": "rhkgkrrh1!"}
+cred = {"id": CBSHSELF_ID, "password": CBSHSELF_PW}
 
 with req.session() as sess:
     res = sess.post(SIGNIN_URL, data=cred)
@@ -64,7 +70,7 @@ configRef = db.collection("workflow").document("configuration")
 formerConfig = configRef.get().to_dict()
 configRef.update({"teachers": tcr, "classes": rmlst, "lastUpdated": firestore.SERVER_TIMESTAMP})
 
-print("\nUPDATE SUCCESS")
+print("SUCCESS")
 print(
     f"teachers(total: {len(tcr)}, delta: {len(tcr)-len(formerConfig['teachers'])}), classes(total: {len(rmlst.keys())}, delta: {len(rmlst.keys()) - len(formerConfig['classes'])})"
 )
