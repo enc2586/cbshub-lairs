@@ -3,6 +3,8 @@
 name: daily-tasks
 
 on:
+  push:
+    branches: [master]
   schedule:
     - cron: "0 15 * * *"
     - cron: "* * * * *"
