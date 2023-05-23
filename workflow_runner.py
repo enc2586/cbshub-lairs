@@ -5,7 +5,6 @@ from bs4 import BeautifulSoup
 from pprint import pprint
 import pytz
 import firebase_init
-from dotenv import load_dotenv
 
 SIGNIN_URL = "http://www.cbshself.kr/sign/actionLogin.do"
 APPLY_URL = "http://www.cbshself.kr/self/requestSelfLrn.do"
@@ -17,7 +16,6 @@ def clean_up(str):
     return result
 
 
-load_dotenv()
 KST = pytz.timezone("Asia/Seoul")
 
 today = dt.utcnow().astimezone(KST)
@@ -65,7 +63,7 @@ for uid, workflow_user_sets in workflows.items():
                 "cchTcherId": workflow["teacher"],
                 "clssrmId": workflow["classroom"],
                 "actCode": "ACT999",
-                "actCn": workflow["title"] if workflow["title"] != "" else "자율 학습활동 (-cbshub)",
+                "actCn": workflow["title"] if workflow["title"] != "" else "자율 학습활동 (cbshub)",
                 "sgnId": today.strftime(r"%Y%m%d"),
             }
             workflow_period_sets = []
